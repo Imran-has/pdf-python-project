@@ -1,8 +1,9 @@
 import streamlit as st
 from PIL import Image
 import io
-import os
 from datetime import datetime
+import tempfile
+import os
 
 # Set page configuration
 st.set_page_config(
@@ -40,16 +41,29 @@ uploaded_file = st.file_uploader("Choose an image file", type=['png', 'jpg', 'jp
 
 if uploaded_file is not None:
     # Display the uploaded image
-    image = Image.open(uploaded_file)
-    st.image(image, caption="Uploaded Image", use_column_width=True)
+    st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
     
     # Convert button
     if st.button("Convert to PDF"):
         try:
-            # Create a PDF file
-            pdf_bytes = io.BytesIO()
-            image.save(pdf_bytes, format='PDF')
-            pdf_bytes.seek(0)
+            # Read the image
+            image = Image.open(uploaded_file)
+            
+            # Convert to RGB if image is in RGBA mode
+            if image.mode == 'RGBA':
+                image = image.convert('RGB')
+            
+            # Create a temporary file
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+                # Convert image to PDF
+                image.save(tmp_file.name, 'PDF')
+                
+                # Read the PDF file
+                with open(tmp_file.name, 'rb') as pdf_file:
+                    pdf_bytes = pdf_file.read()
+                
+                # Clean up the temporary file
+                os.unlink(tmp_file.name)
             
             # Generate filename with timestamp
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -70,4 +84,4 @@ if uploaded_file is not None:
 
 # Footer
 st.markdown("---")
-st.markdown("Made by ❤️ imran hassan") 
+st.markdown("Made with ❤️ using Streamlit") 
